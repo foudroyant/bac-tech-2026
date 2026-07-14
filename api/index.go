@@ -33,12 +33,21 @@ var cachedOpts struct {
 }
 
 func init() {
-	data, err := os.ReadFile("database.json")
+	// Try multiple paths for database.json
+	paths := []string{"database.json", "../database.json", "api/database.json"}
+	var data []byte
+	var err error
+	for _, p := range paths {
+		data, err = os.ReadFile(p)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
-		panic(err)
+		panic("database.json not found in any of " + fmt.Sprint(paths))
 	}
 	if err := json.Unmarshal(data, &cachedStudents); err != nil {
-		panic(err)
+		panic("failed to parse database.json: " + err.Error())
 	}
 
 	seen := map[string]map[string]struct{}{
@@ -388,7 +397,14 @@ func renderPage(w http.ResponseWriter, students []Student, total, totalPages, pe
 	fmt.Fprint(w, `</div>
             </div>
         </div>
+        <footer class="mt-8 text-center text-sm text-gray-400 border-t border-gray-200 pt-6">
+            Développé par <span class="font-medium text-gray-500">Stéphane Bamby Bazebibouta</span>
+            &mdash; <a href="mailto:stephanebazebibouta@gmail.com" class="hover:text-gray-700">stephanebazebibouta@gmail.com</a>
+            &mdash; <a href="tel:+242064837637" class="hover:text-gray-700">+242 06 483 76 37</a>
+            <br><span class="text-xs">Full Stack Developer</span>
+        </footer>
     </div>
 </body>
 </html>`)
 }
+
