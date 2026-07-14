@@ -1,16 +1,19 @@
 package handler
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
+
+//go:embed database.json
+var databaseJSON []byte
 
 type Student struct {
 	Departement   string `json:"DEPARTEMENT"`
@@ -33,20 +36,7 @@ var cachedOpts struct {
 }
 
 func init() {
-	// Try multiple paths for database.json
-	paths := []string{"database.json", "../database.json", "api/database.json"}
-	var data []byte
-	var err error
-	for _, p := range paths {
-		data, err = os.ReadFile(p)
-		if err == nil {
-			break
-		}
-	}
-	if err != nil {
-		panic("database.json not found in any of " + fmt.Sprint(paths))
-	}
-	if err := json.Unmarshal(data, &cachedStudents); err != nil {
+	if err := json.Unmarshal(databaseJSON, &cachedStudents); err != nil {
 		panic("failed to parse database.json: " + err.Error())
 	}
 

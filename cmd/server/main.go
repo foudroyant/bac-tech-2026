@@ -61,7 +61,7 @@ func excelDateToStr(serialStr string) string {
 }
 
 func loadData() error {
-	data, err := os.ReadFile("database.json")
+	data, err := os.ReadFile("api/database.json")
 	if err != nil {
 		return err
 	}

@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "api/index.go": {
-      "includeFiles": "database.json"
-    }
-  },
   "rewrites": [
     { "source": "/search", "destination": "/api/index" },
     { "source": "/", "destination": "/api/index" }
