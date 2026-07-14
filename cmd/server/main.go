@@ -1,11 +1,9 @@
 package main
 
 import (
-	"embed"
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io/fs"
 	"log"
 	"math"
 	"net/http"
@@ -47,9 +45,6 @@ var (
 	students []Student
 	opts     FilterOpts
 )
-
-//go:embed templates/*
-var templateFS embed.FS
 
 var indexTmpl *template.Template
 
@@ -106,7 +101,7 @@ func loadData() error {
 }
 
 func initTemplate() {
-	b, err := fs.ReadFile(templateFS, "templates/index.html")
+	b, err := os.ReadFile("templates/index.html")
 	if err != nil {
 		log.Fatal(err)
 	}
