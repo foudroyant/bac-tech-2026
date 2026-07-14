@@ -126,7 +126,11 @@ func main() {
 	http.HandleFunc("/", handleIndex)
 	http.HandleFunc("/search", handleSearch)
 
-	addr := ":8080"
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	addr := ":" + port
 	log.Printf("Serveur démarré sur http://localhost%s", addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
 }

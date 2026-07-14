@@ -1,0 +1,10 @@
+.git
+.gitignore
+*.exe
+*.xlsx
+node_modules/
+Dockerfile
+.dockerignore
+fly.toml
+vercel.json
+api/
