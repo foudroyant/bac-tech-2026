@@ -149,34 +149,68 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	renderResults(w, filtered[start:end], total, totalPages, page, q, serie, mention, dept)
+}
 
-	if total == 0 {
+func renderResults(w http.ResponseWriter, items []Student, total, totalPages, page int, q, serie, mention, dept string) {
+	fmt.Fprint(w, `<div id="results-container">
+		<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+			<div class="overflow-x-auto">
+				<table class="w-full">
+					<thead>
+						<tr class="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+							<th class="px-4 py-3">Département</th>
+							<th class="px-4 py-3">Matricule</th>
+							<th class="px-4 py-3">Nom</th>
+							<th class="px-4 py-3">Prénom</th>
+							<th class="px-4 py-3">Sexe</th>
+							<th class="px-4 py-3">Date Naiss.</th>
+							<th class="px-4 py-3">Lieu</th>
+							<th class="px-4 py-3">Série</th>
+							<th class="px-4 py-3">Mention</th>
+							<th class="px-4 py-3">Établissement</th>
+						</tr>
+					</thead>
+					<tbody id="results-body">`)
+
+	if len(items) == 0 {
 		fmt.Fprint(w, `<tr><td colspan="10" class="px-4 py-12 text-center text-gray-400">Aucun résultat trouvé</td></tr>`)
 	} else {
-		for _, s := range filtered[start:end] {
+		for _, s := range items {
 			date := excelDateToStr(s.Date)
 			etab := s.Etablissement
 			fmt.Fprintf(w, `<tr class="hover:bg-gray-50 transition-colors even:bg-gray-50/50">
-				<td class="px-4 py-3 border-b text-xs text-gray-600">%s</td>
-				<td class="px-4 py-3 border-b text-xs font-mono text-gray-800">%s</td>
-				<td class="px-4 py-3 border-b text-sm font-semibold text-gray-900">%s</td>
-				<td class="px-4 py-3 border-b text-sm text-gray-700">%s</td>
-				<td class="px-4 py-3 border-b text-xs text-gray-500">%s</td>
-				<td class="px-4 py-3 border-b text-xs text-gray-600">%s</td>
-				<td class="px-4 py-3 border-b text-xs text-gray-600">%s</td>
-				<td class="px-4 py-3 border-b"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">%s</span></td>
-				<td class="px-4 py-3 border-b"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">%s</span></td>
-				<td class="px-4 py-3 border-b text-xs text-gray-600 max-w-[180px] truncate" title="%s">%s</td>
-			</tr>`, s.Departement, s.Matricule, s.Nom, s.Prenom, s.Sexe, date, s.Lieu, s.Serie, s.Mention, etab, etab)
+					<td class="px-4 py-3 border-b text-xs text-gray-600">%s</td>
+					<td class="px-4 py-3 border-b text-xs font-mono text-gray-800">%s</td>
+					<td class="px-4 py-3 border-b text-sm font-semibold text-gray-900">%s</td>
+					<td class="px-4 py-3 border-b text-sm text-gray-700">%s</td>
+					<td class="px-4 py-3 border-b text-xs text-gray-500">%s</td>
+					<td class="px-4 py-3 border-b text-xs text-gray-600">%s</td>
+					<td class="px-4 py-3 border-b text-xs text-gray-600">%s</td>
+					<td class="px-4 py-3 border-b"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">%s</span></td>
+					<td class="px-4 py-3 border-b"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">%s</span></td>
+					<td class="px-4 py-3 border-b text-xs text-gray-600 max-w-[180px] truncate" title="%s">%s</td>
+				</tr>`, s.Departement, s.Matricule, s.Nom, s.Prenom, s.Sexe, date, s.Lieu, s.Serie, s.Mention, etab, etab)
 		}
 	}
 
-	fmt.Fprint(w, `<div id="pagination" hx-swap-oob="true" class="flex flex-col items-center gap-3 py-4 border-t border-gray-100">`)
+	e := func(v string) string {
+		if v == "" {
+			return ""
+		}
+		return strings.ReplaceAll(v, " ", "%20")
+	}
+
+	fmt.Fprint(w, `</tbody>
+				</table>
+			</div>
+			<div id="pagination" class="flex flex-col items-center gap-3 py-4 border-t border-gray-100">`)
+
 	if totalPages > 1 {
 		fmt.Fprint(w, `<div class="flex items-center gap-1 flex-wrap justify-center">`)
 		if page > 1 {
-			url := fmt.Sprintf("/search?q=%s&serie=%s&mention=%s&dept=%s&page=%d", q, serie, mention, dept, page-1)
-			fmt.Fprintf(w, `<button hx-get="%s" hx-target="#results-body" hx-swap="innerHTML" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 transition-colors">Précédent</button>`, url)
+			u := fmt.Sprintf("/search?q=%s&serie=%s&mention=%s&dept=%s&page=%d", e(q), e(serie), e(mention), e(dept), page-1)
+			fmt.Fprintf(w, `<button hx-get="%s" hx-target="#results-container" hx-swap="outerHTML" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 transition-colors">Précédent</button>`, u)
 		} else {
 			fmt.Fprint(w, `<button disabled class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-400 cursor-not-allowed">Précédent</button>`)
 		}
@@ -189,20 +223,22 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 			if p == page {
 				fmt.Fprintf(w, `<span class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium">%d</span>`, p)
 			} else {
-				url := fmt.Sprintf("/search?q=%s&serie=%s&mention=%s&dept=%s&page=%d", q, serie, mention, dept, p)
-				fmt.Fprintf(w, `<button hx-get="%s" hx-target="#results-body" hx-swap="innerHTML" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 transition-colors">%d</button>`, url, p)
+				u := fmt.Sprintf("/search?q=%s&serie=%s&mention=%s&dept=%s&page=%d", e(q), e(serie), e(mention), e(dept), p)
+				fmt.Fprintf(w, `<button hx-get="%s" hx-target="#results-container" hx-swap="outerHTML" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 transition-colors">%d</button>`, u, p)
 			}
 		}
 		if page < totalPages {
-			url := fmt.Sprintf("/search?q=%s&serie=%s&mention=%s&dept=%s&page=%d", q, serie, mention, dept, page+1)
-			fmt.Fprintf(w, `<button hx-get="%s" hx-target="#results-body" hx-swap="innerHTML" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 transition-colors">Suivant</button>`, url)
+			u := fmt.Sprintf("/search?q=%s&serie=%s&mention=%s&dept=%s&page=%d", e(q), e(serie), e(mention), e(dept), page+1)
+			fmt.Fprintf(w, `<button hx-get="%s" hx-target="#results-container" hx-swap="outerHTML" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 transition-colors">Suivant</button>`, u)
 		} else {
 			fmt.Fprint(w, `<button disabled class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-400 cursor-not-allowed">Suivant</button>`)
 		}
 		fmt.Fprint(w, `</div>`)
 	}
 	fmt.Fprintf(w, `<div class="text-sm text-gray-500">%d résultat(s) — Page %d/%d</div>`, total, page, totalPages)
-	fmt.Fprint(w, `</div>`)
+	fmt.Fprint(w, `</div>
+		</div>
+	</div>`)
 }
 
 func renderPage(w http.ResponseWriter, students []Student, total, totalPages, perPage int) {
@@ -226,17 +262,25 @@ func renderPage(w http.ResponseWriter, students []Student, total, totalPages, pe
 
         <form id="search-form"
               hx-get="/search"
-              hx-target="#results-body"
-              hx-swap="innerHTML"
+              hx-target="#results-container"
+              hx-swap="outerHTML"
               class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="md:col-span-4">
                     <input type="text" name="q" placeholder="Rechercher par nom, prénom, matricule, établissement..."
-                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
+                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                           hx-trigger="keyup changed delay:300ms"
+                           hx-target="#results-container"
+                           hx-swap="outerHTML"
+                           hx-include="#search-form">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">Série</label>
-                    <select name="serie" onchange="this.form.requestSubmit()"
+                    <select name="serie"
+                            hx-trigger="change"
+                            hx-target="#results-container"
+                            hx-swap="outerHTML"
+                            hx-include="#search-form"
                             class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm bg-white">
                         <option value="">Toutes</option>`)
 	for _, v := range opts.Series {
@@ -246,7 +290,11 @@ func renderPage(w http.ResponseWriter, students []Student, total, totalPages, pe
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">Mention</label>
-                    <select name="mention" onchange="this.form.requestSubmit()"
+                    <select name="mention"
+                            hx-trigger="change"
+                            hx-target="#results-container"
+                            hx-swap="outerHTML"
+                            hx-include="#search-form"
                             class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm bg-white">
                         <option value="">Toutes</option>`)
 	for _, v := range opts.Mentions {
@@ -256,7 +304,11 @@ func renderPage(w http.ResponseWriter, students []Student, total, totalPages, pe
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">Département</label>
-                    <select name="dept" onchange="this.form.requestSubmit()"
+                    <select name="dept"
+                            hx-trigger="change"
+                            hx-target="#results-container"
+                            hx-swap="outerHTML"
+                            hx-include="#search-form"
                             class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm bg-white">
                         <option value="">Tous</option>`)
 	for _, v := range opts.Departements {
@@ -269,7 +321,7 @@ func renderPage(w http.ResponseWriter, students []Student, total, totalPages, pe
                             class="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
                         Rechercher
                     </button>
-                    <button type="reset" onclick="setTimeout(()=>this.form.requestSubmit(),10)"
+                    <button type="reset" onclick="setTimeout(()=>htmx.trigger('#search-form','submit'),10)"
                             class="px-4 py-2.5 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
                         Effacer
                     </button>
@@ -277,24 +329,25 @@ func renderPage(w http.ResponseWriter, students []Student, total, totalPages, pe
             </div>
         </form>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                            <th class="px-4 py-3">Département</th>
-                            <th class="px-4 py-3">Matricule</th>
-                            <th class="px-4 py-3">Nom</th>
-                            <th class="px-4 py-3">Prénom</th>
-                            <th class="px-4 py-3">Sexe</th>
-                            <th class="px-4 py-3">Date Naiss.</th>
-                            <th class="px-4 py-3">Lieu</th>
-                            <th class="px-4 py-3">Série</th>
-                            <th class="px-4 py-3">Mention</th>
-                            <th class="px-4 py-3">Établissement</th>
-                        </tr>
-                    </thead>
-                    <tbody id="results-body">`)
+        <div id="results-container">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3">Département</th>
+                                <th class="px-4 py-3">Matricule</th>
+                                <th class="px-4 py-3">Nom</th>
+                                <th class="px-4 py-3">Prénom</th>
+                                <th class="px-4 py-3">Sexe</th>
+                                <th class="px-4 py-3">Date Naiss.</th>
+                                <th class="px-4 py-3">Lieu</th>
+                                <th class="px-4 py-3">Série</th>
+                                <th class="px-4 py-3">Mention</th>
+                                <th class="px-4 py-3">Établissement</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-body">`)
 	for _, s := range students {
 		date := excelDateToStr(s.Date)
 		etab := s.Etablissement
@@ -312,36 +365,30 @@ func renderPage(w http.ResponseWriter, students []Student, total, totalPages, pe
 						</tr>`, s.Departement, s.Matricule, s.Nom, s.Prenom, s.Sexe, date, s.Lieu, s.Serie, s.Mention, etab, etab)
 	}
 	fmt.Fprint(w, `</tbody>
-                </table>
-            </div>
-
-            <div id="pagination" class="flex flex-col items-center gap-3 py-4 border-t border-gray-100">`)
+                    </table>
+                </div>
+                <div id="pagination" class="flex flex-col items-center gap-3 py-4 border-t border-gray-100">`)
 	if totalPages > 1 {
 		fmt.Fprint(w, `<div class="flex items-center gap-1 flex-wrap justify-center">
-                    <button disabled class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-400 cursor-not-allowed">Précédent</button>`)
+                        <button disabled class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-400 cursor-not-allowed">Précédent</button>`)
 		maxBtns := min(5, totalPages)
 		for p := 1; p <= maxBtns; p++ {
 			if p == 1 {
 				fmt.Fprintf(w, `<span class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium">%d</span>`, p)
 			} else {
-				fmt.Fprintf(w, `<button hx-get="/search?page=%d" hx-target="#results-body" hx-swap="innerHTML" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 transition-colors">%d</button>`, p, p)
+				fmt.Fprintf(w, `<button hx-get="/search?page=%d" hx-target="#results-container" hx-swap="outerHTML" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 transition-colors">%d</button>`, p, p)
 			}
 		}
 		if totalPages > 1 {
-			fmt.Fprintf(w, `<button hx-get="/search?page=2" hx-target="#results-body" hx-swap="innerHTML" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 transition-colors">Suivant</button>`)
+			fmt.Fprintf(w, `<button hx-get="/search?page=2" hx-target="#results-container" hx-swap="outerHTML" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 transition-colors">Suivant</button>`)
 		}
 		fmt.Fprint(w, `</div>`)
 	}
 	fmt.Fprintf(w, `<div class="text-sm text-gray-500">%d résultat(s) — Page 1/%d</div>`, total, totalPages)
 	fmt.Fprint(w, `</div>
+            </div>
         </div>
     </div>
-
-    <script>
-        document.getElementById('search-form').addEventListener('reset', function(e) {
-            setTimeout(() => this.requestSubmit(), 10);
-        });
-    </script>
 </body>
 </html>`)
 }
