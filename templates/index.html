@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats Bac Technique 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Résultats du Bac Technique 2026</h1>
+            <p class="text-gray-500 mt-1">{{.Total}} candidats admis</p>
+        </header>
+
+        <form id="search-form"
+              hx-get="/search"
+              hx-target="#results-body"
+              hx-swap="innerHTML"
+              class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="md:col-span-4">
+                    <input type="text" name="q" placeholder="Rechercher par nom, prénom, matricule, établissement..."
+                           class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Série</label>
+                    <select name="serie" onchange="this.form.requestSubmit()"
+                            class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm bg-white">
+                        <option value="">Toutes</option>
+                        {{range .Opts.Series}}<option value="{{.}}">{{.}}</option>{{end}}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Mention</label>
+                    <select name="mention" onchange="this.form.requestSubmit()"
+                            class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm bg-white">
+                        <option value="">Toutes</option>
+                        {{range .Opts.Mentions}}<option value="{{.}}">{{.}}</option>{{end}}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Département</label>
+                    <select name="dept" onchange="this.form.requestSubmit()"
+                            class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm bg-white">
+                        <option value="">Tous</option>
+                        {{range .Opts.Departements}}<option value="{{.}}">{{.}}</option>{{end}}
+                    </select>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button type="submit"
+                            class="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                        Rechercher
+                    </button>
+                    <button type="reset" onclick="setTimeout(()=>this.form.requestSubmit(),10)"
+                            class="px-4 py-2.5 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                        Effacer
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            <th class="px-4 py-3">Département</th>
+                            <th class="px-4 py-3">Matricule</th>
+                            <th class="px-4 py-3">Nom</th>
+                            <th class="px-4 py-3">Prénom</th>
+                            <th class="px-4 py-3">Sexe</th>
+                            <th class="px-4 py-3">Date Naiss.</th>
+                            <th class="px-4 py-3">Lieu</th>
+                            <th class="px-4 py-3">Série</th>
+                            <th class="px-4 py-3">Mention</th>
+                            <th class="px-4 py-3">Établissement</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body">
+                        {{range .Students}}
+                        <tr class="hover:bg-gray-50 transition-colors even:bg-gray-50/50">
+                            <td class="px-4 py-3 border-b text-xs text-gray-600">{{.Departement}}</td>
+                            <td class="px-4 py-3 border-b text-xs font-mono text-gray-800">{{.Matricule}}</td>
+                            <td class="px-4 py-3 border-b text-sm font-semibold text-gray-900">{{.Nom}}</td>
+                            <td class="px-4 py-3 border-b text-sm text-gray-700">{{.Prenom}}</td>
+                            <td class="px-4 py-3 border-b text-xs text-gray-500">{{.Sexe}}</td>
+                            <td class="px-4 py-3 border-b text-xs text-gray-600">{{excelDate .Date}}</td>
+                            <td class="px-4 py-3 border-b text-xs text-gray-600">{{.Lieu}}</td>
+                            <td class="px-4 py-3 border-b"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">{{.Serie}}</span></td>
+                            <td class="px-4 py-3 border-b"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">{{.Mention}}</span></td>
+                            <td class="px-4 py-3 border-b text-xs text-gray-600 max-w-[180px] truncate" title="{{.Etablissement}}">{{.Etablissement}}</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="pagination" class="flex flex-col items-center gap-3 py-4 border-t border-gray-100">
+                {{if gt .TotalPages 1}}
+                <div class="flex items-center gap-1 flex-wrap justify-center">
+                    <button disabled class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-400 cursor-not-allowed">Précédent</button>
+                    {{range $i := seq 5}}
+                        {{if le $i $.TotalPages}}
+                            {{if eq $i 1}}
+                            <span class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium">{{$i}}</span>
+                            {{else}}
+                            <button hx-get="/search?page={{$i}}" hx-target="#results-body" hx-swap="innerHTML" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 transition-colors">{{$i}}</button>
+                            {{end}}
+                        {{end}}
+                    {{end}}
+                    {{if gt .TotalPages 1}}
+                    <button hx-get="/search?page=2" hx-target="#results-body" hx-swap="innerHTML" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 transition-colors">Suivant</button>
+                    {{end}}
+                </div>
+                {{end}}
+                <div class="text-sm text-gray-500">{{.Total}} résultat(s) — Page 1/{{.TotalPages}}</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('search-form').addEventListener('reset', function(e) {
+            setTimeout(() => this.requestSubmit(), 10);
+        });
+    </script>
+</body>
+</html>

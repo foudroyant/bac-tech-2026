@@ -1,0 +1,6 @@
+bac-tech.exe
+.vscode/
+.idea/
+*.exe
+*.test
+*.out
